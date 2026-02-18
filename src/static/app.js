@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Clear loading message
       activitiesList.innerHTML = "";
 
+      // Reset activity dropdown to just the placeholder option
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
+
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
@@ -22,7 +25,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const participantItems = details.participants.length
           ? details.participants
-              .map((p) => `<li>${p}</li>`)
+              .map(
+                (p) =>
+                  `<li>
+                    <span class="participant-email">${p}</span>
+                    <button class="delete-btn" data-activity="${name}" data-email="${p}" title="Unregister">
+                      &#x1F5D1;
+                    </button>
+                  </li>`
+              )
               .join("")
           : `<li class="no-participants">No participants yet — be the first!</li>`;
 
@@ -38,6 +49,28 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // Wire up delete buttons
+        activityCard.querySelectorAll(".delete-btn").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const activity = btn.dataset.activity;
+            const email = btn.dataset.email;
+            try {
+              const res = await fetch(
+                `/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`,
+                { method: "DELETE" }
+              );
+              if (res.ok) {
+                fetchActivities();
+              } else {
+                const err = await res.json();
+                alert(err.detail || "Failed to unregister participant.");
+              }
+            } catch (e) {
+              console.error("Error unregistering participant:", e);
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
